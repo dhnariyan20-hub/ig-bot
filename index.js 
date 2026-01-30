@@ -3,8 +3,8 @@ const fs = require("fs");
 
 const ig = new IgApiClient();
 
-const USERNAME = "YOUR_IG_USERNAME";
-const PASSWORD = "YOUR_IG_PASSWORD";
+const USERNAME = "maverickzaypher";
+const PASSWORD = "jimjim1234";
 
 (async () => {
   try {
