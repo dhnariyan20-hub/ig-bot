@@ -1,32 +1,5 @@
-const { IgApiClient } = require("instagram-private-api");
-const fs = require("fs-extra");
+const Goat = require("./Goat");
+const config = require("./config.json");
 
-const loadCmds = require("./core/loader");
-const poller = require("./core/poller");
-const perm = require("./core/permission");
-const cooldown = require("./core/cooldown");
-const stats = require("./core/stats");
-
-const config = fs.readJsonSync("./config.json");
-const ig = new IgApiClient();
-
-(async () => {
-  ig.state.generateDevice(config.BOTNAME);
-  ig.state.deviceString = "android";
-  ig.state.appUserAgent = "Instagram 290.0.0.77.109 Android";
-
-  const cookies = fs.readJsonSync("./session.json");
-  for (const c of cookies) {
-    const str = `${c.name}=${c.value}; Domain=${c.domain}; Path=${c.path};`;
-    const url = `https://${c.domain.replace(/^\./, "")}/`;
-    await ig.state.cookieJar.setCookie(str, url);
-  }
-
-  const me = await ig.account.currentUser();
-  console.log(`[ SUCCESS ] Logged in as ${me.username}`);
-
-  stats.init();
-  const cmds = loadCmds();
-
-  await poller({ ig, cmds, config, stats, cooldown, perm });
-})();
+const bot = new Goat(config);
+bot.start();
