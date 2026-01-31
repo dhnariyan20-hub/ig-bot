@@ -1,0 +1,6 @@
+{
+  "BOTNAME": "IG-GOAT-BOT",
+  "PREFIX": "/",
+  "ADMINBOT": ["TOMAR_IG_ID"],
+  "VERSION": "1.0.0"
+}
