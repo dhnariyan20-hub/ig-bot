@@ -1,12 +1,7 @@
 {
-  "BOTNAME": "IG-GOATBOT-V2",
+  "BOTNAME": "IG-GOAT-BOT",
   "PREFIX": "!",
-  "POLL_INTERVAL": 6000,
-  "OWNER": "71003504812",
   "ADMINS": ["71003504812"],
-  "COOLDOWN_MS": 5000,
-  "AUTO_REPLY": {
-    "hi": "Hello 👋",
-    "hello": "Hi there 🙂"
-  }
+  "LANG": "en",
+  "POLL_INTERVAL": 7000
 }
