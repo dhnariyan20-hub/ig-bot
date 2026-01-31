@@ -1,0 +1,56 @@
+module.exports = async ({ ig, cmds, config, stats, cooldown, perm }) => {
+  const seen = new Set();
+  console.log(`[ ${config.BOTNAME} ] DM polling started 🐐`);
+
+  setInterval(async () => {
+    try {
+      const inbox = await ig.feed.directInbox().items();
+
+      for (const thread of inbox) {
+        const msg = thread.items.find(
+          m => m.text && !seen.has(m.item_id)
+        );
+        if (!msg) continue;
+
+        seen.add(msg.item_id);
+        if (seen.size > 1000) seen.clear();
+
+        stats.inc("messages");
+
+        const text = msg.text.toLowerCase();
+
+        // auto reply
+        for (const k in config.AUTO_REPLY) {
+          if (text === k) {
+            await ig.entity.directThread(thread.thread_id)
+              .broadcastText(config.AUTO_REPLY[k]);
+            return;
+          }
+        }
+
+        if (!msg.text.startsWith(config.PREFIX)) continue;
+
+        const args = msg.text.slice(config.PREFIX.length).trim().split(/\s+/);
+        const name = args.shift().toLowerCase();
+
+        if (!cmds.has(name)) continue;
+
+        if (!cooldown.check(msg.user_id, name, config.COOLDOWN_MS))
+          return;
+
+        const cmd = cmds.get(name);
+        if (!perm(msg.user_id, config, cmd.config.permission)) {
+          await ig.entity.directThread(thread.thread_id)
+            .broadcastText("❌ Permission denied");
+          return;
+        }
+
+        stats.inc("commands");
+        await cmd.run({ ig, msg, args, threadId: thread.thread_id });
+      }
+    } catch (e) {
+      console.error("[ BOT ERROR ]", e.message);
+      await new Promise(r => setTimeout(r, 15000));
+    }
+  }, config.POLL_INTERVAL);
+};
