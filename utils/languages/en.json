@@ -1,0 +1,9 @@
+{
+  "prefixOnly": "🐐 IG-GOAT-BOT\n\nPrefix: {prefix}\nUse {prefix}help to see all commands.",
+  "help": "🐐 IG-GOAT-BOT COMMAND LIST\n\n{commands}\n\nUse {prefix}<command>",
+  "ping": "🏓 Pong!",
+  "uid": "👤 Your UID: {uid}",
+  "no_permission": "❌ You don't have permission to use this command.",
+  "cooldown": "⏳ Please wait before using this command again.",
+  "ai_empty": "❓ Please enter a message for AI."
+}
