@@ -1,53 +1,32 @@
-const { IgApiClient } = require('instagram-private-api');
-const { withRealtime } = require('instagram_mqtt');
-const fs = require('fs-extra');
-const path = require('path');
+const { IgApiClient } = require("instagram-private-api");
+const fs = require("fs-extra");
 
-const config = JSON.parse(fs.readFileSync('./config.json'));
-const account = fs.readFileSync('./account.txt', 'utf8').split(':');
+const loadCmds = require("./core/loader");
+const poller = require("./core/poller");
+const perm = require("./core/permission");
+const cooldown = require("./core/cooldown");
+const stats = require("./core/stats");
 
+const config = fs.readJsonSync("./config.json");
 const ig = new IgApiClient();
-const commands = new Map();
-
-// --- Command Loader ---
-const cmdsPath = path.join(__dirname, 'cmds');
-const cmdFiles = fs.readdirSync(cmdsPath).filter(file => file.endsWith('.js'));
-
-for (const file of cmdFiles) {
-    const cmd = require(`./cmds/${file}`);
-    commands.set(cmd.config.name, cmd);
-}
-
-async function login() {
-    ig.state.generateDevice(account[0]);
-    await ig.account.login(account[0], account[1]);
-    console.log(`[ ${config.BOTNAME} ] Logged in successfully!`);
-}
-
-const igRealtime = withRealtime(ig);
-
-igRealtime.on('message', async (event) => {
-    const message = event.message;
-    if (!message || !message.text) return;
-
-    const text = message.text;
-    if (!text.startsWith(config.PREFIX)) return;
-
-    const args = text.slice(config.PREFIX.length).trim().split(/ +/g);
-    const commandName = args.shift().toLowerCase();
-
-    if (commands.has(commandName)) {
-        try {
-            const cmd = commands.get(commandName);
-            await cmd.run({ ig, message, args, threadId: message.thread_id });
-        } catch (err) {
-            console.error(err);
-        }
-    }
-});
 
 (async () => {
-    await login();
-    await igRealtime.connect();
-    console.log(`[ ${config.BOTNAME} ] Realtime connected. 🥀`);
+  ig.state.generateDevice(config.BOTNAME);
+  ig.state.deviceString = "android";
+  ig.state.appUserAgent = "Instagram 290.0.0.77.109 Android";
+
+  const cookies = fs.readJsonSync("./session.json");
+  for (const c of cookies) {
+    const str = `${c.name}=${c.value}; Domain=${c.domain}; Path=${c.path};`;
+    const url = `https://${c.domain.replace(/^\./, "")}/`;
+    await ig.state.cookieJar.setCookie(str, url);
+  }
+
+  const me = await ig.account.currentUser();
+  console.log(`[ SUCCESS ] Logged in as ${me.username}`);
+
+  stats.init();
+  const cmds = loadCmds();
+
+  await poller({ ig, cmds, config, stats, cooldown, perm });
 })();
