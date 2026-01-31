@@ -1,12 +1,15 @@
 {
-  "name": "ig-test-bot",
-  "version": "0.1.0",
-  "private": true,
-  "type": "commonjs",
+  "name": "ig-bot-v2",
+  "version": "1.0.0",
+  "description": "Instagram Bot like GoatBot v2",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "instagram-private-api": "^1.46.1"
+    "instagram-private-api": "^1.45.3",
+    "instagram_mqtt": "^1.1.0",
+    "fs-extra": "^10.0.0",
+    "axios": "^1.4.0"
   }
 }
