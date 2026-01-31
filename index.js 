@@ -1,36 +1,53 @@
-const { IgApiClient } = require("instagram-private-api");
-const fs = require("fs");
+const { IgApiClient } = require('instagram-private-api');
+const { withRealtime } = require('instagram_mqtt');
+const fs = require('fs-extra');
+const path = require('path');
+
+const config = JSON.parse(fs.readFileSync('./config.json'));
+const account = fs.readFileSync('./account.txt', 'utf8').split(':');
 
 const ig = new IgApiClient();
+const commands = new Map();
 
-const USERNAME = "maverickzaypher";
-const PASSWORD = "jimjim1234";
+// --- Command Loader ---
+const cmdsPath = path.join(__dirname, 'cmds');
+const cmdFiles = fs.readdirSync(cmdsPath).filter(file => file.endsWith('.js'));
+
+for (const file of cmdFiles) {
+    const cmd = require(`./cmds/${file}`);
+    commands.set(cmd.config.name, cmd);
+}
+
+async function login() {
+    ig.state.generateDevice(account[0]);
+    await ig.account.login(account[0], account[1]);
+    console.log(`[ ${config.BOTNAME} ] Logged in successfully!`);
+}
+
+const igRealtime = withRealtime(ig);
+
+igRealtime.on('message', async (event) => {
+    const message = event.message;
+    if (!message || !message.text) return;
+
+    const text = message.text;
+    if (!text.startsWith(config.PREFIX)) return;
+
+    const args = text.slice(config.PREFIX.length).trim().split(/ +/g);
+    const commandName = args.shift().toLowerCase();
+
+    if (commands.has(commandName)) {
+        try {
+            const cmd = commands.get(commandName);
+            await cmd.run({ ig, message, args, threadId: message.thread_id });
+        } catch (err) {
+            console.error(err);
+        }
+    }
+});
 
 (async () => {
-  try {
-    ig.state.generateDevice(USERNAME);
-
-    // session reuse (safe)
-    if (fs.existsSync("session.json")) {
-      await ig.state.deserialize(JSON.parse(fs.readFileSync("session.json")));
-      console.log("🔁 Session loaded");
-    } else {
-      await ig.account.login(USERNAME, PASSWORD);
-      fs.writeFileSync(
-        "session.json",
-        JSON.stringify(await ig.state.serialize())
-      );
-      console.log("🔐 Logged in & session saved");
-    }
-
-    // 🔎 simple test call
-    const me = await ig.account.currentUser();
-    console.log("✅ LOGIN SUCCESS");
-    console.log("👤 Username:", me.username);
-    console.log("🆔 UserID:", me.pk);
-
-  } catch (e) {
-    console.log("❌ LOGIN FAILED");
-    console.log(e.message);
-  }
+    await login();
+    await igRealtime.connect();
+    console.log(`[ ${config.BOTNAME} ] Realtime connected. 🥀`);
 })();
